@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Snowflake Financial Assets Demo</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.3.1/d3.min.js" integrity="sha512-9H86d5lhAwgf2/u29K4N5G6pZThNOojI8kMT4nT4NHvVR02cM85M06KJRQXkI0XgQWBpzQyIyr8LVomyu1AQdw==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js" integrity="sha512-HjKxWye8lJGPu5q1u/ZYkHlJrJdm6KGr89E6tOrXeKm1mItb1xusPU8QPcKVhP8F9LjpZT7vsu1Fa+dQywP4eg==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-collection/1.0.5/d3-collection.min.js" integrity="sha512-wYLIhsNaJ6cBEcFIgAtY0ncVV3KEzE95+32OfOdQJQkEfZVrWOn+N2woUPaBCuW8N6S7++72Y7XlOPZ/3U7X2w==" crossorigin="anonymous"></script>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/11.0.2/bootstrap-slider.min.js" integrity="sha512-f0VlzJbcEB6KiW8ZVtL+5HWPDyW1+nJEjguZ5IVnSQkvZbwBt2RfCBY0CBO1PsMAqxxrG4Di6TfsCPP3ZRwKpA==" crossorigin="anonymous"></script>
+    
+    <script src='../js/jquery.js'></script>
+    <script src='../js/snowflakeWrapper.js'></script>
+    <script src='../js/query.js'></script>
+    <script src='../js/ui.js'></script>
+    <script src='../js/profile.js'></script>
+
+
+    <script>
+      //localStorage.removeItem("gbl");
+
+      var gbl = {};
+      gbl.exchange = 'New York Stock Exchange';
+      gbl.portfolio = []
+      gbl.sfconn = null;
+      if(localStorage.getItem("gbl") != null){
+        gbl = JSON.parse(localStorage.getItem("gbl"));
+      }
+
+      connect().then((conn)=>{
+          gbl.sfconn = conn;
+          initUI();
+          return showScreenr();
+      })
+
+      if(!gbl.uuid){
+        makeUUID()
+      }
+
+    </script>
+
+
+    <style>
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+          height: 100%;
+      }
+    </style>
+
+  </head>
+
+  <body style='background-color: black; color:white;' >
+
+    <div class="d-md-flex h-100 align-items-center">
+      <!-- First Half -->
+      <div class="col-md-2 p-0 h-100">
+          <div class="text-white d-md-flex text-center justify-content-center">
+            
+            <div class="w-100">
+              <br>
+              <div class="btn-group dropright w-100">
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Menu</button>
+                <div class="dropdown-menu" x-placement="right-start" style="position: absolute; transform: translate3d(111px, 0px, 0px); top: 0px; left: 0px; will-change: transform;">
+                  <a class="dropdown-item" href="#" onclick="alert('coming soon')">Leaderboard</a>
+                  <a class="dropdown-item" href="#" onclick="showScreenr()">Screener</a>
+                  <a class="dropdown-item" href="#" onclick="showProfile()">Profile</a>
+
+                </div>
+              </div>
+              <br>
+              <!-- Heat Map button -->
+              <div class="btn-group dropright w-100">
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Major Indices</button>
+                <div class="dropdown-menu" x-placement="right-start" style="position: absolute; transform: translate3d(111px, 0px, 0px); top: 0px; left: 0px; will-change: transform;">
+                  <a class="dropdown-item" href="#" onclick="S_P_500()">S&P 500</a>
+                  <a class="dropdown-item" href="#" onclick="Nasdaq_QQQ()">NASDAQ</a>
+                  <a class="dropdown-item" href="#" onclick="DJI()">Dow Jones (DJI)</a>
+                </div>
+              </div>
+
+              <!-- Screener button -->
+              <br>
+              <div class="btn-group dropright w-100">
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">My Portfolios</button>
+                <div id='portfolio-dropdown' class="dropdown-menu" x-placement="right-start" style="position: absolute; transform: translate3d(111px, 0px, 0px); top: 0px; left: 0px; will-change: transform;">
+                  
+                  <div class="input-group mb-5">
+                    <input type="text" class="form-control" id='new-port-input' placeholder="New Portfolio Name"  aria-describedby="basic-addon1">
+                    <button type="button" class="btn btn-dark" onclick='make_portfolio($("#new-port-input").val())'>👍</button>
+                  </div>
+                  <div class="dropdown-divider"></div>
+                  
+                  <a class="dropdown-item" href="#" onclick="showAllPortfolios()"><strong>Show All</strong></a>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+       
+          <!-- SIDE BARS -->
+          <br><br>
+
+          <div id='screener-side-bar' class="w-100 text-center justify-content-center">
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon1">Ticker</span>
+              </div>
+              <input type="text" class="form-control" placeholder="Ticker" maxlength="10" aria-label="Ticker" id='ticker-input' style="text-transform:uppercase" aria-describedby="basic-addon1">
+              <button type="button" class="btn btn-success" onclick="showScreenr()">go</button>
+
+            </div>
+
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <label class="input-group-text" for="exchange-input-select">Exchange</label>
+              </div>
+              <select class="custom-select" id="exchange-input-select" onchange="showScreenr()">
+                <option selected>All</option>
+                <option value='1'></option>
+                <option value="1">NYSE</option>
+                <option value="2">NYSE Arca</option>
+                <option value="3">NasdaqGS</option>
+
+                <option value="1">NasdaqCM</option>
+                <option value="2">NYSE American</option>
+                <option value="3">BATS Exchange</option>
+
+                <option value="1">Other OTC</option>
+                <option value="2">NASDAQ Global Market</option>
+                <option value="3">NASDAQ Capital Market</option>
+
+                <option value="1">NYSEArca</option>
+                <option value="2">BATS</option>
+                <option value="3">YHD</option>
+
+                <option value="1">Nasdaq Global Select</option>
+                <option value="2">NasdaqGM</option>
+                <option value="3">New York Stock Exchange</option>
+              </select>
+            </div>
+
+              <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <label class="input-group-text" for="sector-input-select">Sector</label>
+                </div>
+                <select class="custom-select" id="sector-input-select" onchange="showScreenr()">
+                  <option selected>All</option>
+                  <option value='1'></option>
+                  <option value='1'>Consumer Cyclical</option>
+                  <option value='1'>Energy</option>
+                  <option value='1'>Media</option>
+                  <option value='1'>Basic Materials</option>
+                  <option value='1'>Communication Services</option>
+                  <option value='1'>Consumer Defensive</option>
+                  <option value='1'>Industrials</option>
+                  <option value='1'>Utilities</option>
+                  <option value='1'>N/A</option>
+                  <option value='1'>Real Estate</option>
+                  <option value='1'>Financial Services</option>
+                  <option value='1'>Healthcare</option>
+                  <option value='1'>Technology</option>
+                  <option value='1'>Pharmaceuticals</option>
+                </select>
+              </div>
+
+              <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <label class="input-group-text" for="industry-input-select">Industry</label>
+                </div>
+                <select class="custom-select" id="industry-input-select" onchange="showScreenr()">
+                  <option selected>All</option>
+                  <option value='1'></option>
+                  <option value='1'>Insurance</option>
+                  <option value='1'>Tools & Accessories</option>
+                  <option value='1'>Oil & Gas Integrated</option>
+                  <option value='1'>Uranium</option>
+                  <option value='1'>Education & Training Services</option>
+                  <option value='1'>Insurance Diversified</option>
+                  <option value='1'>Pollution & Treatment Controls</option>
+                  <option value='1'>Personal Services</option>
+                  <option value='1'>Energy</option>
+                  <option value='1'>Coal</option>
+                  <option value='1'>Independent Oil & Gas</option>
+                  <option value='1'>Scientific & Technical Instruments</option>
+                  <option value='1'>Oil & Gas Midstream</option>
+                  <option value='1'>Packaged Foods</option>
+                  <option value='1'>Telecom Services</option>
+                  <option value='1'>Communication Services</option>
+                  <option value='1'>Integrated Freight & Logistics</option>
+                  <option value='1'>Autos</option>
+                  <option value='1'>Education</option>
+                  <option value='1'>Semiconductor Equipment & Materials</option>
+                  <option value='1'>Insurance Reinsurance</option>
+                  <option value='1'>Electronics & Computer Distribution</option>
+                  <option value='1'>Farm Products</option>
+                  <option value='1'>Insurance Brokers</option>
+                  <option value='1'>Beverages Non-Alcoholic</option>
+                  <option value='1'>Drug Manufacturers General Specialty & Generic</option>
+                  <option value='1'>Computer Hardware</option>
+                  <option value='1'>Oil & Gas E&P</option>
+                  <option value='1'>Specialty Business Services</option>
+                  <option value='1'>Financial Conglomerates</option>
+                  <option value='1'>Lodging</option>
+                  <option value='1'>Other Precious Metals & Mining</option>
+                  <option value='1'>Confectioners</option>
+                  <option value='1'>Information Technology Services</option>
+                  <option value='1'>Household & Personal Products</option>
+                  <option value='1'>Real Estate Development</option>
+                  <option value='1'>Beverages Alcoholic</option>
+                  <option value='1'>Conglomerates</option>
+                  <option value='1'>Credit Services</option>
+                  <option value='1'>Building Products & Equipment</option>
+                  <option value='1'>Capital Goods</option>
+                  <option value='1'>Capital Markets</option>
+                  <option value='1'>Biotechnology</option>
+                  <option value='1'>Aluminum</option>
+                  <option value='1'>Apparel Manufacturing</option>
+                  <option value='1'>Health Care Equipment & Services</option>
+                  <option value='1'>N/A</option>
+                  <option value='1'>REIT Mortgage</option>
+                  <option value='1'>Oil & Gas Drilling</option>
+                  <option value='1'>Tobacco</option>
+                  <option value='1'>Utilities</option>
+                  <option value='1'>Insurance Specialty</option>
+                  <option value='1'>Consulting Services</option>
+                  <option value='1'>Medical Care Facilities</option>
+                  <option value='1'>Airports & Air Services</option>
+                  <option value='1'>Consumer Electronics</option>
+                  <option value='1'>Footwear & Accessories</option>
+                  <option value='1'>Retail Defensive</option>
+                  <option value='1'>Real Estate</option>
+                  <option value='1'>Utilities Renewable</option>
+                  <option value='1'>Food, Beverage & Tobacco</option>
+                  <option value='1'>Leisure</option>
+                  <option value='1'>Farm & Heavy Construction Machinery</option>
+                  <option value='1'>Utilities Diversified</option>
+                  <option value='1'>Recreational Vehicles</option>
+                  <option value='1'>Metal Fabrication</option>
+                  <option value='1'>Pharmaceuticals, Biotechnology & Life Sciences</option>
+                  <option value='1'>Agricultural Inputs</option>
+                  <option value='1'>Other Industrial Metals & Mining</option>
+                  <option value='1'>REIT Office</option>
+                  <option value='1'>Chemicals</option>
+                  <option value='1'>Banks Diversified</option>
+                  <option value='1'>Software Infrastructure</option>
+                  <option value='1'>Electronic Gaming & Multimedia</option>
+                  <option value='1'>Electrical Equipment & Parts</option>
+                  <option value='1'>Financial Data & Stock Exchanges</option>
+                  <option value='1'>REIT Hotel & Motel</option>
+                  <option value='1'>Software Application</option>
+                  <option value='1'>Apparel Retail</option>
+                  <option value='1'>Department Stores</option>
+                  <option value='1'>Advertising Agencies</option>
+                  <option value='1'>Home Improvement Retail</option>
+                  <option value='1'>Asset Management</option>
+                  <option value='1'>Beverages Wineries & Distilleries</option>
+                  <option value='1'>Specialty Chemicals</option>
+                  <option value='1'>Farm & Construction Machinery</option>
+                  <option value='1'>REIT Healthcare Facilities</option>
+                  <option value='1'>Oil & Gas Equipment & Services</option>
+                  <option value='1'>Electronic Components</option>
+                  <option value='1'>Retail Apparel & Specialty</option>
+                  <option value='1'>Aerospace & Defense</option>
+                  <option value='1'>Building Materials</option>
+                  <option value='1'>Broadcasting</option>
+                  <option value='1'>Utilities Regulated Electric</option>
+                  <option value='1'>REIT Specialty</option>
+                  <option value='1'>Medical Instruments & Equipment</option>
+                  <option value='1'>Consumer Packaged Goods</option>
+                  <option value='1'>Resorts & Casinos</option>
+                  <option value='1'>REIT Residential</option>
+                  <option value='1'>Metals & Mining</option>
+                  <option value='1'>Trucking</option>
+                  <option value='1'>Pharmaceutical Retailers</option>
+                  <option value='1'>Luxury Goods</option>
+                  <option value='1'>Diagnostics & Research</option>
+                  <option value='1'>Oil & Gas Refining & Marketing</option>
+                  <option value='1'>Gold</option>
+                  <option value='1'>Food Distribution</option>
+                  <option value='1'>Publishing</option>
+                  <option value='1'>Infrastructure Operations</option>
+                  <option value='1'>Auto & Truck Dealerships</option>
+                  <option value='1'>Manufacturing Apparel & Furniture</option>
+                  <option value='1'>Lumber & Wood Production</option>
+                  <option value='1'>Coking Coal</option>
+                  <option value='1'>Media & Entertainment</option>
+                  <option value='1'>Auto Manufacturers</option>
+                  <option value='1'>Real Estate Services</option>
+                  <option value='1'>Diversified Financials</option>
+                  <option value='1'>Airlines</option>
+                  <option value='1'>Security & Protection Services</option>
+                  <option value='1'>Consulting & Outsourcing</option>
+                  <option value='1'>Travel & Leisure</option>
+                  <option value='1'>Drug Manufacturers General</option>
+                  <option value='1'>Business Equipment & Supplies</option>
+                  <option value='1'>Medical Devices</option>
+                  <option value='1'>REIT Retail</option>
+                  <option value='1'>REIT Diversified</option>
+                  <option value='1'>Engineering & Construction</option>
+                  <option value='1'>Marine Shipping</option>
+                  <option value='1'>Health Care Plans</option>
+                  <option value='1'>Utilities Regulated Gas</option>
+                  <option value='1'>Silver</option>
+                  <option value='1'>Transportation & Logistics</option>
+                  <option value='1'>Homebuilding & Construction</option>
+                  <option value='1'>Staffing & Employment Services</option>
+                  <option value='1'>Steel</option>
+                  <option value='1'>Residential Construction</option>
+                  <option value='1'>Medical Distribution</option>
+                  <option value='1'>Software & Services</option>
+                  <option value='1'>Textile Manufacturing</option>
+                  <option value='1'></option>
+                  <option value='1'>Insurance Property & Casualty</option>
+                  <option value='1'>Communication Equipment</option>
+                  <option value='1'>Auto Parts</option>
+                  <option value='1'>Mortgage Finance</option>
+                  <option value='1'>Copper</option>
+                  <option value='1'>Specialty Industrial Machinery</option>
+                  <option value='1'>Packaging & Containers</option>
+                  <option value='1'>Restaurants</option>
+                  <option value='1'>Business Services</option>
+                  <option value='1'>Semiconductors</option>
+                  <option value='1'>Shell Companies</option>
+                  <option value='1'>Health Information Services</option>
+                  <option value='1'>Thermal Coal</option>
+                  <option value='1'>Grocery Stores</option>
+                  <option value='1'>Oil & Gas Services</option>
+                  <option value='1'>Medical Diagnostics & Research</option>
+                  <option value='1'>Industrial Distribution</option>
+                  <option value='1'>Railroads</option>
+                  <option value='1'>Brokers & Exchanges</option>
+                  <option value='1'>Online Media</option>
+                  <option value='1'>Gambling</option>
+                  <option value='1'>REITs</option>
+                  <option value='1'>Waste Management</option>
+                  <option value='1'>Utilities Regulated Water</option>
+                  <option value='1'>Internet Content & Information</option>
+                  <option value='1'>Rental & Leasing Services</option>
+                  <option value='1'>Real Estate Diversified</option>
+                  <option value='1'>Solar</option>
+                  <option value='1'>Travel Services</option>
+                  <option value='1'>Paper & Paper Products</option>
+                  <option value='1'>Furnishings, Fixtures & Appliances</option>
+                  <option value='1'>Utilities Regulated</option>
+                  <option value='1'>REIT Industrial</option>
+                  <option value='1'>Utilities Independent Power Producers</option>
+                  <option value='1'>Discount Stores</option>
+                  <option value='1'>Specialty Retail</option>
+                  <option value='1'>Insurance Life</option>
+                  <option value='1'>Banks</option>
+                  <option value='1'>Banks Regional</option>
+                  <option value='1'>Medical Instruments & Supplies</option>
+                  <option value='1'>Entertainment</option>
+                  <option value='1'>Internet Retail</option>
+                  <option value='1'>Industrial Products</option>
+                  <option value='1'>Beverages Brewers</option>
+                </select>
+              </div>
+
+              <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <label class="input-group-text" for="mc-start-input-select">MC</label>
+                </div>
+                <select class="custom-select" id="mc-start-input-select" onchange="showScreenr()">
+                  <option selected>0</option>
+                  <option>1000</option>
+                  <option>2000</option>
+                  <option>3000</option>
+                  <option>4000</option>
+                  <option>5000</option>
+                  <option>6000</option>
+                  <option>7000</option>
+                  <option>8000</option>
+                  <option>9000</option>
+                  <option>10000</option>
+                  <option>11000</option>
+                  <option>12000</option>
+                  <option>13000</option>
+                  <option>14000</option>
+                  <option>15000</option>
+                  <option>16000</option>
+                  <option>17000</option>
+                  <option>18000</option>
+                  <option>19000</option>
+                  <option>20000</option>
+                  <option>21000</option>
+                  <option>22000</option>
+                  <option>23000</option>
+                  <option>24000</option>
+                  <option>25000</option>
+                  <option>26000</option>
+                  <option>27000</option>
+                  <option>28000</option>
+                  <option>29000</option>
+                  <option>30000</option>
+                </select>
+                <div class="input-group-prepend">
+                  <label class="input-group-text" for="mc-start-input-select">-</label>
+                </div>
+             
+                <select class="custom-select" id="mc-end-input-select" onchange="showScreenr()">
+                  <option>1000</option>
+                  <option>2000</option>
+                  <option>3000</option>
+                  <option>4000</option>
+                  <option>5000</option>
+                  <option>6000</option>
+                  <option>7000</option>
+                  <option>8000</option>
+                  <option>9000</option>
+                  <option>10000</option>
+                  <option>11000</option>
+                  <option>12000</option>
+                  <option>13000</option>
+                  <option>14000</option>
+                  <option>15000</option>
+                  <option>16000</option>
+                  <option>17000</option>
+                  <option>18000</option>
+                  <option>19000</option>
+                  <option>20000</option>
+                  <option>21000</option>
+                  <option>22000</option>
+                  <option>23000</option>
+                  <option>24000</option>
+                  <option>25000</option>
+                  <option>26000</option>
+                  <option>27000</option>
+                  <option>28000</option>
+                  <option>29000</option>
+                  <option selected>30000</option>
+                </select>
+                <!--
+                <div class="input-group-prepend">
+                  <label class="input-group-text" for=""></label>
+                </div>
+                -->
+              </div>
+              
+
+          </div><!-- END SIDE BAR-->
+
+          <div id='indicies-side-bar' class="w-100 text-center justify-content-center">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="market-open-cb" onclick='getTreeMap()'>
+              <label class="form-check-label" for="market-open-cb">Size to % Change</label>
+            </div>
+            
+          </div>
+
+          <div class="w-100 text-center justify-content-center">
+            
+          </div>
+
+      </div>
+      
+      <!-- Second Half -->
+      <div class="col-md-10 p-0 h-100">
+        <!-- Tree Map in the UI -->
+        <div id='treeDiv' style="height:100%;width:100%">
+          <svg id="treeMap" style="height:100%;width:100%"></svg>
+        </div> 
+
+        <!-- Screener Div in the UI -->
+        <div id='screenrDiv' style="height:100%;width:100%;overflow:scroll"></div> 
+
+        <!-- all portfolios div -->
+        <div id='all-ports-Div' style="height:100%;width:100%;overflow:scroll"></div> 
+
+        <!-- individual portfolio -->
+        <div id='indi-ports-Div' style="height:100%;width:100%;overflow:scroll">
+          <br>
+          <h1 onclick="$('#indi-ports-Div').hide(); $('#all-ports-Div').show(); " style='color:red'>🅧</h1>
+          <h1 id='portfolio-id-in-div'>💼-</h1>
+          
+          <table class='table table-sm table-dark'>
+            <thead>
+              <tr>
+                <th class="text-center">🎫<br>Symbol</th>
+                <th class="text-center">⏰<br>Add Time</th>
+                <th class="text-center">🔖<br>Purchase Price</th>
+                <th class="text-center">🏷<br>Current Price</th>
+                <th class="text-center">⚖<br>Units</th>
+                <th class="text-center">💰<br>Cost</th>
+                <th class="text-center">💰<br>FMV</th>
+                <th class="text-center">𒈟<br>Profit/Loss</th>
+              </tr>
+            </thead>
+            <tbody id='port-tbody' style='background-color: black;'></tbody>
+          </table>
+
+
+        </div> 
+
+        <!-- all portfolios div -->
+        <div id='show-asset-div' style="height:100%;width:100%;overflow:scroll">
+          <br>
+          <h1 onclick="$('#show-asset-div').hide(); $('#screener-side-bar').show(); $('#screenrDiv').show();" style='color:red'>🅧</h1>
+          <h1 id='asset-ticker'></h1>
+          <br>
+
+          <table class='table table-sm table-dark'>
+            <thead>
+              <tr>
+                <th>🏛 Exchange</th>
+                <th>🏭 Industry</th>
+                <th>𑅀 Sector</th>
+                
+                <th>💰 Market Cap</th>
+                <th>👐 Open</th>
+                <th>↔️ Range</th>
+                <th>💹 Volume</th>
+              </tr>
+          </thead>
+
+          <tbody style='background-color:black'>
+            <tr>
+              <td id='asset-table-exchange'>-</td>
+              <td id='asset-table-industry'>-</td>
+              <td id='asset-table-sector'>-</td>
+              
+              <td id='asset-table-mktcap'>-</td>
+              <td id='asset-table-open'>-</td>
+              <td id='asset-table-range'>-</td>
+              <td id='asset-table-volume'>-</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <caption>Figi -  <a>https://www.openfigi.com/</a></caption>
+        <div style='height:200px; overflow: scroll;border-bottom:1px white;font-size: 10px;font-weight: 100;'>
+        <table class='table table-sm table-striped table-dark'>
+          <thead>
+            <tr>
+              <th>Composite FIGI</th>
+              <th>exchCode</th>
+              <th>Figi</th>
+              <th>marketSector</th>
+              <th>name</th>
+              <th>securityDescription</th>
+              <th>securityType</th>
+              <th>securityType2</th>
+              <th>ShareClassFigi</th>
+              <th>ticker</th>
+              <th>uniqueID</th>
+              <th>securityType</th>
+              <th>uniqueIDFutOpt</th>
+            </tr>
+         </thead>
+        
+          <tbody style='background-color: black; font-size: 10px;font-weight: lighter;' id='figi-output-table'>
+            <tr>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+        
+
+
+        </div> <!-- END VIEW -->
+
+        <!-- individual portfolios div -->
+        <div id='portfolio-assets-div' style="height:100%;width:100%;overflow:scroll"></div> 
+
+        <!-- Profile Div in the UI -->
+        <div id='profileDiv' class="text-white text-center align-items-center justify-content-center" style="height:100%;width:100%;overflow:scroll">
+          <h1>My Profile</h1>
+          <br><br>
+          
+          <h4>ID</h4>
+          <h5 id='user-id-profile'>--</h5>
+          
+          <br>
+
+          <div style='display: table; width:100%' class='align-items-center justify-content-center'>
+            <div class="input-group" style='width:400px'>
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon1">User Tag @</span>
+              </div>
+              <input type="text" class="form-control" placeholder="User Tag" maxlength="30" aria-label="user-tag" id='user-tag-input' aria-describedby="basic-addon1">
+              <button type="button" class="btn btn-warning" onclick="setUserTag($('#user-tag-input').val())">Set User Tag</button>
+            </div>
+          </div>
+
+          <br><br><br><br>
+          <h4>Portfolios</h4>
+          <div id='portfolio-dropdown-profile'></div>
+
+          
+
+
+        </div> 
+
+      </div>
+          
+    </div>
+
+
+    
+    
+    
+  </body>
+</html>
