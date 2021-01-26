@@ -1,5 +1,9 @@
 var snowflake = require('snowflake-sdk');
-var config = ;
+var config = {
+    "snowflake":{
+ 
+    }
+};
 
 var connection = snowflake.createConnection(config.snowflake);
 
