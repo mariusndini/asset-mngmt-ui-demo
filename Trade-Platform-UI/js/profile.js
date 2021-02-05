@@ -12,9 +12,10 @@ function makeUUID(){
     
     $.ajax(settings).done(function (response) {
         gbl.uuid = response.uuid;
-        $('#user-id-profile').html(gbl.uuid);
-        localStorage.setItem("gbl", JSON.stringify(gbl) );
-        
+        alert();
+        //$('#user-id-profile').html(gbl.uuid);
+        //localStorage.setItem("gbl", JSON.stringify(gbl) );
+        //saveData();
     });
 
 }

@@ -1,7 +1,7 @@
 var snowflake = require('snowflake-sdk');
 var config = {
     "snowflake":{
- 
+
     }
 };
 

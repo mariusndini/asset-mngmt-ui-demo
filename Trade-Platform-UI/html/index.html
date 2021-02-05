@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>Snowflake Financial Assets Demo</title>
+    <title>Financial Assets Demo</title>
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
@@ -16,31 +16,37 @@
     
     <script src='../js/jquery.js'></script>
     <script src='../js/snowflakeWrapper.js'></script>
-    <script src='../js/query.js'></script>
     <script src='../js/ui.js'></script>
+    <script src='../js/query.js'></script>
     <script src='../js/profile.js'></script>
 
 
     <script>
       //localStorage.removeItem("gbl");
-
-      var gbl = {};
-      gbl.exchange = 'New York Stock Exchange';
-      gbl.portfolio = []
-      gbl.sfconn = null;
-      if(localStorage.getItem("gbl") != null){
+      var shwProfile = true;
+      if(localStorage.getItem("gbl") == null){
+        var gbl = {};
+        gbl.portfolio = []
+        gbl.sfconn = null;
+        gbl.uuid = generateGuid();;
+      }else{
+        shwProfile = false;
         gbl = JSON.parse(localStorage.getItem("gbl"));
       }
+      
+      
 
       connect().then((conn)=>{
-          gbl.sfconn = conn;
           initUI();
-          return showScreenr();
+          gbl.sfconn = conn;
+          if(shwProfile){
+            showProfile(); 
+          }else{
+            showScreenr();
+          }
+          return;
       })
 
-      if(!gbl.uuid){
-        makeUUID()
-      }
 
     </script>
 
@@ -66,20 +72,19 @@
           <div class="text-white d-md-flex text-center justify-content-center">
             
             <div class="w-100">
-              <br>
+              <br><h3>Market Advantage</h3>
               <div class="btn-group dropright w-100">
-                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Menu</button>
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" style='border-radius: 0px;border-color: black;' aria-haspopup="true" aria-expanded="false">Menu</button>
                 <div class="dropdown-menu" x-placement="right-start" style="position: absolute; transform: translate3d(111px, 0px, 0px); top: 0px; left: 0px; will-change: transform;">
-                  <a class="dropdown-item" href="#" onclick="alert('coming soon')">Leaderboard</a>
+                  <a class="dropdown-item" href="#" onclick="showLeaderboard()">Leaderboard</a>
                   <a class="dropdown-item" href="#" onclick="showScreenr()">Screener</a>
                   <a class="dropdown-item" href="#" onclick="showProfile()">Profile</a>
-
                 </div>
               </div>
               <br>
               <!-- Heat Map button -->
               <div class="btn-group dropright w-100">
-                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Major Indices</button>
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" style='border-radius: 0px;border-color: black;' aria-haspopup="true" aria-expanded="false">Major Indices</button>
                 <div class="dropdown-menu" x-placement="right-start" style="position: absolute; transform: translate3d(111px, 0px, 0px); top: 0px; left: 0px; will-change: transform;">
                   <a class="dropdown-item" href="#" onclick="S_P_500()">S&P 500</a>
                   <a class="dropdown-item" href="#" onclick="Nasdaq_QQQ()">NASDAQ</a>
@@ -90,7 +95,7 @@
               <!-- Screener button -->
               <br>
               <div class="btn-group dropright w-100">
-                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">My Portfolios</button>
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" style='border-radius: 0px;border-color: black;' aria-haspopup="true" aria-expanded="false">My Portfolios</button>
                 <div id='portfolio-dropdown' class="dropdown-menu" x-placement="right-start" style="position: absolute; transform: translate3d(111px, 0px, 0px); top: 0px; left: 0px; will-change: transform;">
                   
                   <div class="input-group mb-5">
@@ -369,7 +374,7 @@
 
               <div class="input-group mb-3">
                 <div class="input-group-prepend">
-                  <label class="input-group-text" for="mc-start-input-select">MC</label>
+                  <label class="input-group-text" for="mc-start-input-select">cap</label>
                 </div>
                 <select class="custom-select" id="mc-start-input-select" onchange="showScreenr()">
                   <option selected>0</option>
@@ -440,12 +445,9 @@
                   <option>29000</option>
                   <option selected>30000</option>
                 </select>
-                <!--
-                <div class="input-group-prepend">
-                  <label class="input-group-text" for=""></label>
-                </div>
-                -->
+
               </div>
+
               
 
           </div><!-- END SIDE BAR-->
@@ -453,7 +455,7 @@
           <div id='indicies-side-bar' class="w-100 text-center justify-content-center">
             <div class="form-check">
               <input class="form-check-input" type="checkbox" value="" id="market-open-cb" onclick='getTreeMap()'>
-              <label class="form-check-label" for="market-open-cb">Size to % Change</label>
+              <label class="form-check-label" for="market-open-cb">Scale to Change</label>
             </div>
             
           </div>
@@ -476,6 +478,28 @@
 
         <!-- all portfolios div -->
         <div id='all-ports-Div' style="height:100%;width:100%;overflow:scroll"></div> 
+
+        <!-- show leader board-->
+        <div id='all-leaderboard' style="height:100%;width:100%;overflow:scroll">
+          <table class='table table-sm table-dark table-hover'>
+            <thead>
+              <tr>
+                <th class="text-center">👩‍💻<br>Name</th>
+                <th class="text-center">📛<br>Tag</th>
+                <th class="text-center">⚔️<br>Assets</th>
+                <th class="text-center">💰<br>Purchase Value</th>
+                <th class="text-center">🏷<br>Market Value</th>
+                <th class="text-center">💰<br>P/L</th>
+                <th class="text-center">⚖<br>%</th>
+              </tr>
+            </thead>
+            <tbody id='leaderboard-table' style='background-color: black;'></tbody>
+          </table>
+
+
+
+        </div> 
+
 
         <!-- individual portfolio -->
         <div id='indi-ports-Div' style="height:100%;width:100%;overflow:scroll">
@@ -584,25 +608,35 @@
         <!-- Profile Div in the UI -->
         <div id='profileDiv' class="text-white text-center align-items-center justify-content-center" style="height:100%;width:100%;overflow:scroll">
           <h1>My Profile</h1>
+          <p>Find your profile/info below.</p>
           <br><br>
           
           <h4>ID</h4>
           <h5 id='user-id-profile'>--</h5>
-          
           <br>
 
-          <div style='display: table; width:100%' class='align-items-center justify-content-center'>
-            <div class="input-group" style='width:400px'>
+          <div class='form-row justify-content-center'>
+            <div class="input-group" style='width:450px'>
               <div class="input-group-prepend">
                 <span class="input-group-text" id="basic-addon1">User Tag @</span>
               </div>
               <input type="text" class="form-control" placeholder="User Tag" maxlength="30" aria-label="user-tag" id='user-tag-input' aria-describedby="basic-addon1">
-              <button type="button" class="btn btn-warning" onclick="setUserTag($('#user-tag-input').val())">Set User Tag</button>
+              <button type="button" class="btn btn-warning" onclick="setUserTag($('#user-tag-input').val())">Set</button>
             </div>
           </div>
+          <p>Please only change this once. Either leave the default value or decide on a handle.</p>
 
-          <br><br><br><br>
+          <br><br>
+
           <h4>Portfolios</h4>
+          <p>Below are your portfolios. Delete as necessary. 
+            <br>You can create new ones by going to <b>My Portfolios</b> or below
+            <div class='form-row justify-content-center'>
+              <div class="input-group mb-5" style='width:450px'>
+                <input type="text" class="form-control" id='new-port-input-profile' placeholder="New Portfolio Name"  aria-describedby="basic-addon1">
+                <button type="button" class="btn btn-dark" onclick='make_portfolio($("#new-port-input-profile").val())'>👍</button>
+              </div>
+            </div>
           <div id='portfolio-dropdown-profile'></div>
 
           

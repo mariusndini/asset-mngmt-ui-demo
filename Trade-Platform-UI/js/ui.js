@@ -111,7 +111,6 @@ function showScreenr(){
 
     
     var th = `<tr>
-
                 <th class="text-center" onclick='setScreenrOrder("1")' scope="col">🎫<br>Symbol</th>
                 <td style='width:20px'></td>
                 <th class="text-center" onclick='setScreenrOrder("2")' scope="col">⏰<br>Time</th>
@@ -207,6 +206,39 @@ function showProfile(){
     showMenu('profileDiv');
 }
 
+function showLeaderboard(){
+    showMenu('all-leaderboard');
+
+    var SQL = ` select NAME, USERTAG, ASSET_COUNT, VAL, TPMV, PROFITLOSS, PERFORMANCE_PCT
+                from STOCKS.UI.PORTFOLIO_PERF
+                order by performance_pct desc; `;
+
+    runSQL(gbl.sfconn, SQL).then((res)=>{
+        //console.log(res);
+        $('#all-leaderboard tbody').html(' ')
+        for( i=0; i <res.length; i++ ){
+            var tr = $(`<tr>`).append(`<td> <a href='#' onclick='alert("Coming Soon")'>${res[i].NAME}</a>
+                                       </td>
+
+                    <td style='font-size:12px;' class="text-right">${res[i].USERTAG}</td>
+                    <td class="text-right">${res[i].ASSET_COUNT}</td>
+                    <td class="text-right" style='color:${(res[i].PERFORMANCE_PCT>0)?"#05AC72":"#FF5639"}'>${parseFloat(res[i].VAL).toLocaleString('en')}</td>
+                    <td class="text-right" style='color:${(res[i].PERFORMANCE_PCT>0)?"#05AC72":"#FF5639"}'>${parseFloat(res[i].TPMV).toLocaleString('en')}</td>
+
+                    <td class="text-right" style='color:${(res[i].PERFORMANCE_PCT>0)?"#05AC72":"#FF5639"}'>${parseFloat(res[i].PROFITLOSS).toLocaleString('en')}</td>
+                    <td class="text-right" style='color:${(res[i].PERFORMANCE_PCT>0)?"#05AC72":"#FF5639"}'>${parseFloat(res[i].PERFORMANCE_PCT).toLocaleString('en')}%</td>
+                `)
+
+            $('#all-leaderboard tbody').append(tr)
+        }
+
+    })
+
+
+
+
+}
+
 function showAsset(t, index){
     var asset = gbl.screener_result[index]
     console.log(asset);
@@ -295,6 +327,7 @@ function showMenu(menu){
     $('#show-asset-div').hide();
     $('#portfolio-assets-div').hide();
     $('#indi-ports-Div').hide();
+    $('#all-leaderboard').hide()
     
     //hide sidebar(s)
     $('#indicies-side-bar').hide();
@@ -308,8 +341,14 @@ function make_portfolio(name){
     gbl.portfolio.push(portfolio)
     $("#new-port-input").val('')
 
-    $('#portfolio-dropdown').append(`<a class="dropdown-item" href="#""><b onclick='removePortfolio(`+(gbl.portfolio.length-1)+`)'>🆇</b> `+portfolio.name+`</a>`)
+    $('#portfolio-dropdown').append(`<a class="dropdown-item" href="#" onclick='showPortfolioBreakdown("${name}", ${gbl.portfolio.length})' >`+portfolio.name+`</a>`)
     saveData()
+
+    $('#portfolio-dropdown-profile').html(' ')
+    for(i=0; i < gbl.portfolio.length; i++){
+        $('#portfolio-dropdown-profile').append(`<b onclick='removePortfolio(`+i+`)'>🆇</b> <a href='#' onclick='showPortfolioBreakdown("${gbl.portfolio[i].name}", ${i})'>` +gbl.portfolio[i].name + `</a><br>`)
+    }
+
 }
 
 function addAssetToPortfolio(asset, units, index, sym_id){
@@ -412,11 +451,10 @@ function randBetween(min, max) {
 function initUI(){
     $('#user-id-profile').html(gbl.uuid);
     if(gbl.usertag == null){
-        gbl.usertag  = 'user-' + gbl.uuid.substring(0,6);
+        setUserTag('user-' + gbl.uuid.substring(0,8));
     }
 
     $('#user-tag-input').val(gbl.usertag)
-
 
     $('#portfolio-dropdown').html(`<div class="input-group mb-3">
                                         <input type="text" class="form-control" id='new-port-input' placeholder="New Portfolio Name"  aria-describedby="basic-addon1">
@@ -427,13 +465,16 @@ function initUI(){
                                     <a class="dropdown-item" href="#" onclick="showAllPortfolios()"><strong>Show All</strong></a>`)
 
     for(i=0; i < gbl.portfolio.length; i++){
-        $('#portfolio-dropdown').append(`<a class="dropdown-item" href="#"><b onclick='removePortfolio(`+i+`)'>🆇</b>` +gbl.portfolio[i].name+`</a>`)
+        //<b onclick='removePortfolio(`+i+`)'>🆇</b>
+        $('#portfolio-dropdown').append(`<a class="dropdown-item" href="#" onclick='showPortfolioBreakdown("${gbl.portfolio[i].name}", ${i})'>` +gbl.portfolio[i].name+`</a>`)
     }
 
+    //PROFILE PAGE IS UPDATED HERE HERE
     $('#portfolio-dropdown-profile').html(' ')
     for(i=0; i < gbl.portfolio.length; i++){
-        $('#portfolio-dropdown-profile').append(`<a class="dropdown-item" href="#"><b onclick='removePortfolio(`+i+`)'>🆇</b>` +gbl.portfolio[i].name+`</a>`)
+        $('#portfolio-dropdown-profile').append(`<b onclick='removePortfolio(`+i+`)'>🆇</b> <a href='#' onclick='showPortfolioBreakdown("${gbl.portfolio[i].name}", ${i})'>` +gbl.portfolio[i].name + `</a><br>`)
     }
+
     
 }//end init ui
 
@@ -494,8 +535,6 @@ function saveData(){
     
     req.write(JSON.stringify({uuid:gbl.uuid, usertag: gbl.usertag, portfolio: gbl.portfolio}));
     req.end();
-
-
 
 }//end save data
 
